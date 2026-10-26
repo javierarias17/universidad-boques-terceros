@@ -583,12 +583,12 @@
       'cli_regFiscal': { titulo: 'Soporte del registro fiscal / Documento extranjero', desc: 'Vigencia no mayor a 30 días en formato PDF.', obligatorio: true }
     };
 
-    // Backend de validación de documentos (ms-tercero). Ajusta si corres el backend en otro host/puerto.
-    const API_BASE_URL = 'http://localhost:8080';
+    // Backend de validación de documentos (ms-tercero), desplegado en Azure Container Apps.
+    const API_BASE_URL = 'https://ms-tercero-api.bluesea-2df0ebb2.belgiumcentral.azurecontainerapps.io';
 
     // Interruptor de demo: en true llama al backend real para validar cédula/RUT; en false no
     // hace ninguna llamada y aprueba todos los documentos por defecto (útil sin el backend arriba).
-    const CALL_BACKEND = false;
+    const CALL_BACKEND = true;
 
     // Documentos para los que ya existe un modelo real en Azure Document Intelligence.
     // El resto se sigue mostrando como "simulado" hasta que se entrenen sus modelos.
