@@ -1065,7 +1065,33 @@
       $('seccion-documentos').classList.add('hidden');
       $('seccion-volver').classList.add('hidden');
       $('seccion-etapa4').classList.remove('hidden');
+
+      enviarCorreoConfirmacion();
     });
+
+    // Envía el correo de confirmación de registro. Se dispara una sola vez, al confirmar
+    // "Finalizar registro", y nunca bloquea la UI: si falla, solo queda en la consola.
+    function enviarCorreoConfirmacion() {
+      if (!CALL_BACKEND) return;
+
+      const calidadTexto = { '1': 'Cliente', '2': 'Proveedor' }[$('calidad')?.value] || '';
+      const esJuridica = $('tipoPersona')?.value === '2';
+      const nit = $('nit')?.value?.trim();
+      const numeroIdentificacion = (esJuridica && nit) ? nit : $('cedula')?.value?.trim();
+
+      const payload = {
+        email: $('correoInstitucional')?.value?.trim(),
+        nombreCompleto: $('nombre')?.value?.trim(),
+        tipoTercero: calidadTexto,
+        numeroIdentificacion
+      };
+
+      fetch(`${API_BASE_URL}/v1/registration-confirmations`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }).catch(error => console.error('No se pudo enviar el correo de confirmación:', error));
+    }
 
     $('btn-finalizar-reiniciar')?.addEventListener('click', () => {
       window.location.reload();
