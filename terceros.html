@@ -1066,31 +1066,45 @@
       $('seccion-volver').classList.add('hidden');
       $('seccion-etapa4').classList.remove('hidden');
 
-      enviarCorreoConfirmacion();
+      finalizarRegistroTercero();
     });
 
-    // Envía el correo de confirmación de registro. Se dispara una sola vez, al confirmar
-    // "Finalizar registro", y nunca bloquea la UI: si falla, solo queda en la consola.
-    function enviarCorreoConfirmacion() {
+    // Finaliza el registro: sube los documentos ya validados, guarda el registro completo y
+    // dispara el correo de confirmación (todo en un solo paso, en el backend). Se dispara una
+    // sola vez, al confirmar "Finalizar registro", y nunca bloquea la UI: si falla, solo queda
+    // en la consola.
+    function finalizarRegistroTercero() {
       if (!CALL_BACKEND) return;
 
       const calidadTexto = { '1': 'Cliente', '2': 'Proveedor' }[$('calidad')?.value] || '';
-      const esJuridica = $('tipoPersona')?.value === '2';
-      const nit = $('nit')?.value?.trim();
-      const numeroIdentificacion = (esJuridica && nit) ? nit : $('cedula')?.value?.trim();
+      const nacionalidadTexto = { '1': 'Extranjero', '2': 'Nacional' }[$('nacionalidad')?.value] || '';
+      const tipoPersonaTexto = { '1': 'Natural', '2': 'Juridica' }[$('tipoPersona')?.value] || '';
 
-      const payload = {
-        email: $('correoInstitucional')?.value?.trim(),
-        nombreCompleto: $('nombre')?.value?.trim(),
-        tipoTercero: calidadTexto,
-        numeroIdentificacion
-      };
+      const formData = new FormData();
+      formData.append('calidad', calidadTexto);
+      formData.append('nacionalidad', nacionalidadTexto);
+      formData.append('tipoPersona', tipoPersonaTexto);
+      formData.append('correo', $('correoInstitucional')?.value?.trim() || '');
+      formData.append('nombre', $('nombre')?.value?.trim() || '');
+      formData.append('cedula', $('cedula')?.value?.trim() || '');
+      formData.append('fechaExpedicionCedula', $('fechaExpedicionCedula')?.value || '');
+      formData.append('lugarNacimiento', $('lugarNacimiento')?.value?.trim() || '');
+      formData.append('paisNacimiento', $('paisNacimiento')?.value?.trim() || '');
+      formData.append('nit', $('nit')?.value?.trim() || '');
+      formData.append('celular', $('celular')?.value?.trim() || '');
+      formData.append('direccion', $('direccion')?.value?.trim() || '');
 
-      fetch(`${API_BASE_URL}/v1/registration-confirmations`, {
+      // Cada documento sube bajo su propia clave interna (prov_cedula, cli_rut, etc.) — el
+      // backend no asume cuáles ni cuántos son, los toma todos.
+      documentosActuales.forEach((docKey) => {
+        const archivo = estadoDocumentos[docKey]?.file;
+        if (archivo) formData.append(docKey, archivo);
+      });
+
+      fetch(`${API_BASE_URL}/v1/tercero-registrations`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      }).catch(error => console.error('No se pudo enviar el correo de confirmación:', error));
+        body: formData
+      }).catch(error => console.error('No se pudo finalizar el registro:', error));
     }
 
     $('btn-finalizar-reiniciar')?.addEventListener('click', () => {
